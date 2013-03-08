@@ -59,7 +59,7 @@ BOOL WINAPI CryptProtectData(
 =end
   
   attach_function :CryptProtectData,
-    [:pointer, :pointer, :pointer, :pointer, :pointer, :uint32, :pointer],
+    [:pointer, :string, :pointer, :pointer, :pointer, :uint32, :pointer],
     :int32
 
 =begin
@@ -82,7 +82,7 @@ reg_keyname = "Software\\Heroku\\Toolbelt\\Creds"
 
 def wat?
   # true to encrypt, false to decrypt
-  false
+  true
 end
 
 if !wat?
@@ -91,26 +91,31 @@ if !wat?
   Win32::Registry::HKEY_CURRENT_USER.open(reg_keyname) do |reg|
     ciphertext.data = reg.read_bin "somedude"
   end
-  Win::CryptUnprotectData(ciphertext, nil, nil, nil, nil, 0,
+  desc_ptr = FFI::MemoryPointer.new(:pointer, 256)
+  Win::CryptUnprotectData(ciphertext, desc_ptr,
+                          nil, nil, nil, 0,
                           plaintext)
 
-  puts "plaintext should be \"#{plaintext.data}\""
+  str_ptr = desc_ptr.read_pointer
+  da_secret = plaintext.data.force_encoding desc_ptr.read_pointer.read_string
 
+  puts "plaintext: \"#{da_secret}\""
+  #puts "plaintext should be \"#{plaintext.data}\""
+  #puts "desc: _#{str_ptr.null? ? "is empty" : str_ptr.read_string}_"
 end
 
 if wat?
-  noise = "Argle-bargle my überfeund, argle-bargle!"
-  blob_in = Win::DataBlob.new noise
-  puts "german cats say \"#{blob_in.data}\""
-  blob_out = Win::DataBlob.new
+  da_secret = "Argle-bargle my überfeund, argle-bargle!"
+  plaintext = Win::DataBlob.new da_secret
+  ciphertext = Win::DataBlob.new
 
-  Win::CryptProtectData(blob_in, nil, nil, nil, nil, 0,
-                        blob_out)
-
-  puts "blob_out: #{blob_out[:cbData]} bytes long"
+  Win::CryptProtectData(plaintext, da_secret.encoding.to_s,
+                        nil, nil, nil, 0,
+                        ciphertext)
 
   Win32::Registry::HKEY_CURRENT_USER.create(reg_keyname) do |reg|
-    reg.write_bin "somedude", blob_out.data
+    reg.write_bin "somedude", ciphertext.data
   end
 
+  puts "wrote ciphertext to registry, encoding #{da_secret.encoding.to_s}"
 end
