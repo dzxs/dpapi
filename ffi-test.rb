@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 require 'ffi'
+require 'win32/registry'
 
 class String
   def to_ptr ; FFI::MemoryPointer.from_string self ; end
@@ -21,11 +22,11 @@ typedef struct _CRYPTOAPI_BLOB {
 
     def initialize s3kr1t=nil
       super nil
-      self.data = s3kr1t
+      self.data = s3kr1t unless s3kr1t.nil?
     end
     
     def data
-      self[:pbData].read_string
+      self[:pbData].get_bytes(0, self[:cbData])
     end
 
     def data= s3kr1t
@@ -35,6 +36,16 @@ typedef struct _CRYPTOAPI_BLOB {
     
   end
 
+  # http://www.pinvoke.net/default.aspx/Enums/CryptProtectFlags.html
+  # dwFlags is a bitvector with the following values...
+  CryptProtectFlags = {:UI_FORBIDDEN => 0x1,
+    :LOCAL_MACHINE => 0x4,
+    :CRED_SYNC => 0x8,
+    :AUDIT => 0x10,
+    :NO_RECOVERY => 0x20,
+    :VERIFY_PROTECTION => 0x40
+  }
+  
 =begin
 BOOL WINAPI CryptProtectData(
   _In_      DATA_BLOB *pDataIn,
@@ -50,9 +61,24 @@ BOOL WINAPI CryptProtectData(
   attach_function :CryptProtectData,
     [:pointer, :pointer, :pointer, :pointer, :pointer, :uint32, :pointer],
     :int32
-  
+
 end
 
-noise = "meow"
-blob = Win::DataBlob.new noise
-puts "german cats say #{blob.data}"
+noise = "Argle-bargle my friends, argle-bargle!"
+blob_in = Win::DataBlob.new noise
+puts "german cats say \"#{blob_in.data}\""
+blob_out = Win::DataBlob.new
+
+Win::CryptProtectData(blob_in, nil, nil, nil, nil, 0,
+                      blob_out)
+
+puts "blob_out: #{blob_out[:cbData]} bytes long"
+#p "exit,no registry write" ; exit 0
+
+keyname = "Software\\Heroku\\Toolbelt\\Creds"
+Win32::Registry::HKEY_CURRENT_USER.create(keyname) do |reg|
+  reg.write_bin "somedude", blob_out.data
+end
+
+#Win.CryptProtectData blob, nil, nil, nil, nil,
+#  Win::CryptProtectFlags[:AUDIT], 
