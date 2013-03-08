@@ -1,5 +1,8 @@
 require 'ffi'
 
+# Minimal wrapper around Microsoft's DPAPI
+#
+# struct & function definitions cribbed from...
 # http://msdn.microsoft.com/en-us/library/ms995355.aspx
 
 module DPAPI
@@ -92,10 +95,10 @@ BOOL WINAPI CryptUnprotectData(
 
   def decrypt ciphertext, entropy=nil, flags=[]
     plaintext_blob  = DataBlob.new
-    desc_ptr = FFI::MemoryPointer.new(:pointer, 256)
+    desc = FFI::MemoryPointer.new(:pointer, 256)
 
     CryptUnprotectData(DataBlob.new ciphertext,
-                       desc_ptr,
+                       desc,
                        DataBlob.new entropy,
                        nil,
                        nil,
@@ -104,8 +107,8 @@ BOOL WINAPI CryptUnprotectData(
       raise DecryptError
     
     {:plaintext => plaintext_blob.data,
-     :desc => desc_ptr.read_pointer.nil? ? nil : desc_ptr.read_pointer.read_string }
-      
+      :desc => desc.read_pointer.nil? ? nil : desc.read_pointer.read_string
+    }
   end
   
 end
