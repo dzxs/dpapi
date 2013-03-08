@@ -80,7 +80,12 @@ end
 
 reg_keyname = "Software\\Heroku\\Toolbelt\\Creds"
 
-if true
+def wat?
+  # true to encrypt, false to decrypt
+  false
+end
+
+if !wat?
   plaintext  = Win::DataBlob.new
   ciphertext = Win::DataBlob.new
   Win32::Registry::HKEY_CURRENT_USER.open(reg_keyname) do |reg|
@@ -93,8 +98,8 @@ if true
 
 end
 
-if false
-  noise = "Argle-bargle my friends, argle-bargle!"
+if wat?
+  noise = "Argle-bargle my überfeund, argle-bargle!"
   blob_in = Win::DataBlob.new noise
   puts "german cats say \"#{blob_in.data}\""
   blob_out = Win::DataBlob.new
@@ -103,12 +108,9 @@ if false
                         blob_out)
 
   puts "blob_out: #{blob_out[:cbData]} bytes long"
-  #p "exit,no registry write" ; exit 0
 
   Win32::Registry::HKEY_CURRENT_USER.create(reg_keyname) do |reg|
     reg.write_bin "somedude", blob_out.data
   end
-end
 
-#Win.CryptProtectData blob, nil, nil, nil, nil,
-#  Win::CryptProtectFlags[:AUDIT], 
+end
