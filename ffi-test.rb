@@ -62,22 +62,52 @@ BOOL WINAPI CryptProtectData(
     [:pointer, :pointer, :pointer, :pointer, :pointer, :uint32, :pointer],
     :int32
 
+=begin
+BOOL WINAPI CryptUnprotectData(
+  _In_        DATA_BLOB *pDataIn,
+  _Out_opt_   LPWSTR *ppszDataDescr,
+  _In_opt_    DATA_BLOB *pOptionalEntropy,
+  _Reserved_  PVOID pvReserved,
+  _In_opt_    CRYPTPROTECT_PROMPTSTRUCT *pPromptStruct,
+  _In_        DWORD dwFlags,
+  _Out_       DATA_BLOB *pDataOut
+);    
+=end
+  attach_function :CryptUnprotectData,
+    [:pointer, :pointer, :pointer, :pointer, :pointer, :uint32, :pointer],
+    :int32
 end
 
-noise = "Argle-bargle my friends, argle-bargle!"
-blob_in = Win::DataBlob.new noise
-puts "german cats say \"#{blob_in.data}\""
-blob_out = Win::DataBlob.new
+reg_keyname = "Software\\Heroku\\Toolbelt\\Creds"
 
-Win::CryptProtectData(blob_in, nil, nil, nil, nil, 0,
-                      blob_out)
+if true
+  plaintext  = Win::DataBlob.new
+  ciphertext = Win::DataBlob.new
+  Win32::Registry::HKEY_CURRENT_USER.open(reg_keyname) do |reg|
+    ciphertext.data = reg.read_bin "somedude"
+  end
+  Win::CryptUnprotectData(ciphertext, nil, nil, nil, nil, 0,
+                          plaintext)
 
-puts "blob_out: #{blob_out[:cbData]} bytes long"
-#p "exit,no registry write" ; exit 0
+  puts "plaintext should be \"#{plaintext.data}\""
 
-keyname = "Software\\Heroku\\Toolbelt\\Creds"
-Win32::Registry::HKEY_CURRENT_USER.create(keyname) do |reg|
-  reg.write_bin "somedude", blob_out.data
+end
+
+if false
+  noise = "Argle-bargle my friends, argle-bargle!"
+  blob_in = Win::DataBlob.new noise
+  puts "german cats say \"#{blob_in.data}\""
+  blob_out = Win::DataBlob.new
+
+  Win::CryptProtectData(blob_in, nil, nil, nil, nil, 0,
+                        blob_out)
+
+  puts "blob_out: #{blob_out[:cbData]} bytes long"
+  #p "exit,no registry write" ; exit 0
+
+  Win32::Registry::HKEY_CURRENT_USER.create(reg_keyname) do |reg|
+    reg.write_bin "somedude", blob_out.data
+  end
 end
 
 #Win.CryptProtectData blob, nil, nil, nil, nil,
