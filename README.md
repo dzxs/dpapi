@@ -24,3 +24,4 @@ ciphertext != secret or raise "OMG END OF EARTH"
 [plaintext, desc] = DPAPI.decrypt ciphertext
 plaintext == secret or raise "OMG DOUBLE-END OF EARTH"
 ```
+
