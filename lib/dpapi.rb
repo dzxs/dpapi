@@ -106,9 +106,9 @@ BOOL WINAPI CryptUnprotectData(
                        plaintext_blob) or
       raise DecryptError
     
-    {:plaintext => plaintext_blob.data,
-      :desc => desc.read_pointer.nil? ? nil : desc.read_pointer.read_string
-    }
+    [plaintext_blob.data,
+     desc.read_pointer.nil? ? nil : desc.read_pointer.read_string
+    ]
   end
   
 end
