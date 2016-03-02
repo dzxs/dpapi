@@ -14,14 +14,15 @@ persist the ciphertext anywhere - that's the developer's
 responsibility.
 
 ```
-require "dpapi"
-
+require "./lib/dpapi.rb"
+include DpApi
 secret = "i herd u liek cryptography"
 
-ciphertext = DPAPI.encrypt secret
+ciphertext = DpApi.encrypt secret
 ciphertext != secret or raise "OMG END OF EARTH"
 
-[plaintext, desc] = DPAPI.decrypt ciphertext
+plaintext, desc = DpApi.decrypt ciphertext
 plaintext == secret or raise "OMG DOUBLE-END OF EARTH"
+puts plaintext
 ```
 
